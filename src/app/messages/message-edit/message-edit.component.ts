@@ -18,10 +18,10 @@ export class MessageEditComponent {
     const msgText = this.msgTextInputRef.nativeElement.value;
 
     const newMessage = new Message(
-      '99',              // ID fijo por ahora
-      subject,           // subject
-      msgText,           // mensaje
-      subject            // ✅ usar el subject como sender
+      '99',              
+      subject,           
+      msgText,           
+      subject            
     );
 
     this.addMessageEvent.emit(newMessage);
