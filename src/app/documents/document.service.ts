@@ -1,4 +1,4 @@
-import { Injectable, EventEmitter } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { Document } from './document.model';
 import { MOCKDOCUMENTS } from './MOCKDOCUMENTS';
 
@@ -6,9 +6,7 @@ import { MOCKDOCUMENTS } from './MOCKDOCUMENTS';
   providedIn: 'root'
 })
 export class DocumentService {
-  documents: Document[] = [];
-  documentSelectedEvent: EventEmitter<Document> = new EventEmitter<Document>();
-
+  private documents: Document[] = [];
 
   constructor() {
     this.documents = MOCKDOCUMENTS;
@@ -19,12 +17,6 @@ export class DocumentService {
   }
 
   getDocument(id: string): Document {
-    for (let document of this.documents) {
-      if (document.id === id) {
-        return document;
-      }
-    }
-    return null!;
+    return this.documents.find(doc => doc.id === id)!;
   }
 }
-
