@@ -1,10 +1,8 @@
-<div
+<a
     [routerLink]="['/contacts', contact.id]" 
     routerLinkActive="active"
     class="list-group-item clearfix">
-    <div class="pull-left">
-        <h4 >{{ contact.name }}</h4>
-    </div>
+    <h4 class="pull-left">{{ contact.name }}</h4>
     <span class="pull-right">
         <img 
         [src]="contact.imageUrl" 
@@ -12,5 +10,5 @@
         class="img-responsive" 
         style="max-height: 50px;">
     </span>
-</div>
+</a>
 

@@ -3,11 +3,12 @@ import { Contact } from './contact.model';
 import { MOCKCONTACTS } from './MOCKCONTACTS';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ContactService {
   contacts: Contact[] = [];
-  contactSelectedEvent: EventEmitter<Contact> = new EventEmitter<Contact>();
+  contactSelectedEvent = new EventEmitter<Contact>();
+  contactChangedEvent = new EventEmitter<Contact[]>(); // 👈 nuevo
 
   constructor() {
     this.contacts = MOCKCONTACTS;
@@ -18,11 +19,14 @@ export class ContactService {
   }
 
   getContact(id: string): Contact {
-    for (let contact of this.contacts) {
-      if (contact.id === id) {
-        return contact;
-      }
+    return this.contacts.find(c => c.id === id)!;
+  }
+
+  deleteContact(contact: Contact): void {
+    const pos = this.contacts.indexOf(contact);
+    if (pos >= 0) {
+      this.contacts.splice(pos, 1);
+      this.contactChangedEvent.emit(this.contacts.slice());
     }
-    return null!;
   }
 }

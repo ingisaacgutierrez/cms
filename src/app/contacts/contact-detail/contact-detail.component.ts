@@ -26,4 +26,8 @@ ngOnInit(): void {
   });
 }
 
+onDelete(): void {
+    this.contactService.deleteContact(this.contact);
+    this.router.navigateByUrl('/contacts');
+  }
 }
