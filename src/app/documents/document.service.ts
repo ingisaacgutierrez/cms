@@ -20,9 +20,10 @@ export class DocumentService {
     return this.documents.slice();
   }
 
-  getDocument(id: string): Document {
-    return this.documents.find(doc => doc.id === id)!;
-  }
+  getDocument(id: string): Document | undefined {
+  return this.documents.find(doc => doc.id === id);
+}
+
 
   deleteDocument(document: Document) {
     if (!document) return;
@@ -55,4 +56,17 @@ export class DocumentService {
     const documentsListClone = this.documents.slice();
     this.documentListChangedEvent.next(documentsListClone);
   }
+
+  updateDocument(originalDocument: Document, newDocument: Document) {
+  if (!originalDocument || !newDocument) return;
+
+  const pos = this.documents.indexOf(originalDocument);
+  if (pos < 0) return;
+
+  newDocument.id = originalDocument.id;
+  this.documents[pos] = newDocument;
+
+  this.documentListChangedEvent.next(this.documents.slice());
+}
+
 }
