@@ -12,8 +12,9 @@ import { ContactService } from '../contact.service';
 })
 export class ContactEditComponent implements OnInit {
   originalContact: Contact;
-  contact: Contact;
+  contact: Contact = new Contact('', '', '', '', '', []);
   editMode: boolean = false;
+  groupContacts: Contact[] = [];
 
   constructor(
     private contactService: ContactService,
@@ -24,17 +25,26 @@ export class ContactEditComponent implements OnInit {
   ngOnInit(): void {
     this.route.params.subscribe((params: Params) => {
       const id = params['id'];
-      if (!id) return;
+      if (!id) {
+        // Nuevo contacto
+        this.editMode = false;
+        this.contact = new Contact('', '', '', '', '', []);
+        this.groupContacts = [];
+        return;
+      }
 
       this.originalContact = this.contactService.getContact(id);
       if (!this.originalContact) return;
 
       this.editMode = true;
       this.contact = JSON.parse(JSON.stringify(this.originalContact));
+      this.groupContacts = this.contact.group ? [...this.contact.group] : [];
     });
   }
 
   onSubmit(form: NgForm): void {
+    if (!form.valid) return;
+
     const value = form.value;
     const newContact: Contact = new Contact(
       '',
@@ -42,7 +52,7 @@ export class ContactEditComponent implements OnInit {
       value.email,
       value.phone,
       value.imageUrl,
-      null
+      this.groupContacts
     );
 
     if (this.editMode) {
@@ -56,5 +66,11 @@ export class ContactEditComponent implements OnInit {
 
   onCancel(): void {
     this.router.navigateByUrl('/contacts');
+  }
+
+  onRemoveItem(index: number): void {
+    if (index >= 0 && index < this.groupContacts.length) {
+      this.groupContacts.splice(index, 1);
+    }
   }
 }
