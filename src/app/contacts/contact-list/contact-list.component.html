@@ -3,15 +3,24 @@
         <h3 class="panel-title-bold pull-left">Contacts</h3>
         <a class="btn btn-success pull-right" [routerLink]="['/contacts', 'new']">New Contact</a>
     </div>
+
     <div class="panel-body">
-        <ul class="list-group">
-        <li
-            class="list-group-item"
-            *ngFor="let contact of contacts"
-            [routerLink]="[contact.id]"
-            routerLinkActive="active .bg-success">
-            <cms-contact-item [contact]="contact"></cms-contact-item>
-        </li>
+        <ul 
+            class="list-group" 
+            cdkDropList 
+            id="contactList"
+            [cdkDropListConnectedTo]="['groupList']"
+            >
+            <li
+                class="list-group-item"
+                *ngFor="let contact of contacts"
+                cdkDrag
+                [cdkDragData]="contact"
+            >
+                <cms-contact-item [contact]="contact"></cms-contact-item>
+            </li>
         </ul>
+
     </div>
 </div>
+
