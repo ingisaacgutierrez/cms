@@ -1,5 +1,4 @@
 import { Component, OnInit } from '@angular/core';
-import { NgForm } from '@angular/forms';
 import { ActivatedRoute, Params, Router } from '@angular/router';
 import { Contact } from '../contact.model';
 import { ContactService } from '../contact.service';
@@ -10,44 +9,50 @@ import { ContactService } from '../contact.service';
   templateUrl: './contact-edit.component.html',
   styleUrls: ['./contact-edit.component.css'],
 })
+
 export class ContactEditComponent implements OnInit {
   originalContact: Contact;
-  contact: Contact = new Contact('', '', '', '', '', []);
-  editMode: boolean = false;
+  contact: Contact;
   groupContacts: Contact[] = [];
+  editMode: boolean = false;
+  id: string;
 
   constructor(
     private contactService: ContactService,
-    private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
     this.route.params.subscribe((params: Params) => {
-      const id = params['id'];
-      if (!id) {
-        // Nuevo contacto
+      this.id = params['id'];
+
+      if (!this.id) {
         this.editMode = false;
-        this.contact = new Contact('', '', '', '', '', []);
-        this.groupContacts = [];
         return;
       }
 
-      this.originalContact = this.contactService.getContact(id);
-      if (!this.originalContact) return;
+      this.originalContact = this.contactService.getContact(this.id);
+
+      if (!this.originalContact) {
+        return;
+      }
 
       this.editMode = true;
+
       this.contact = JSON.parse(JSON.stringify(this.originalContact));
-      this.groupContacts = this.contact.group ? [...this.contact.group] : [];
+
+      if (this.contact.group) {
+        this.groupContacts = JSON.parse(JSON.stringify(this.contact.group));
+      }
     });
   }
 
-  onSubmit(form: NgForm): void {
-    if (!form.valid) return;
-
+  onSubmit(form: any): void {
     const value = form.value;
-    const newContact: Contact = new Contact(
-      '',
+
+    const newContact = new Contact(
+      '', 
       value.name,
       value.email,
       value.phone,
@@ -66,11 +71,5 @@ export class ContactEditComponent implements OnInit {
 
   onCancel(): void {
     this.router.navigateByUrl('/contacts');
-  }
-
-  onRemoveItem(index: number): void {
-    if (index >= 0 && index < this.groupContacts.length) {
-      this.groupContacts.splice(index, 1);
-    }
   }
 }
