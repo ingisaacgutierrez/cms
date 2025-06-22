@@ -11,7 +11,7 @@ export class DocumentService {
   maxDocumentId: number = 0;
   documentListChangedEvent = new Subject<Document[]>();
 
-  private firebaseUrl = 'https://isaacg-cms-default-rtdb.firebaseio.com/documents'; 
+  private firebaseUrl = 'https://isaacg-cms-default-rtdb.firebaseio.com/documents.json'; 
 
   constructor(private http: HttpClient) {
     this.getDocuments();
@@ -28,7 +28,7 @@ export class DocumentService {
         );
         this.documentListChangedEvent.next(this.documents.slice());
       },
-     
+  
       (error: any) => {
         console.error('Error fetching documents from Firebase:', error);
       }
@@ -56,7 +56,7 @@ addDocument(newDocument: Document): void {
   this.maxDocumentId++;
   newDocument.id = this.maxDocumentId.toString();
   this.documents.push(newDocument);
-  this.documentListChangedEvent.next(this.documents.slice());
+  this.storeDocuments();
 }
 
 updateDocument(original: Document, updated: Document): void {
@@ -67,7 +67,7 @@ updateDocument(original: Document, updated: Document): void {
 
   updated.id = original.id;
   this.documents[pos] = updated;
-  this.documentListChangedEvent.next(this.documents.slice());
+  this.storeDocuments();
 }
 
 deleteDocument(document: Document): void {
@@ -77,9 +77,19 @@ deleteDocument(document: Document): void {
   if (pos < 0) return;
 
   this.documents.splice(pos, 1);
-  this.documentListChangedEvent.next(this.documents.slice());
+  this.storeDocuments();
+
 }
 
+storeDocuments() {
+  const documentsJson = JSON.stringify(this.documents);
+  const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+
+  this.http.put(this.firebaseUrl, documentsJson, { headers: headers })
+    .subscribe(() => {
+      this.documentListChangedEvent.next(this.documents.slice());
+    });
+}
 
 
 }
