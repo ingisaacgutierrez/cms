@@ -1,34 +1,57 @@
-import { Injectable, EventEmitter } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { Message } from './message.model';
-import { MOCKMESSAGES } from './MOCKMESSAGES';
+import { Subject } from 'rxjs';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 
 @Injectable({
   providedIn: 'root'
 })
 export class MessageService {
+  messageListChangedEvent = new Subject<Message[]>();
   messages: Message[] = [];
-  messageChangedEvent = new EventEmitter<Message[]>();
+  maxMessageId: number = 0;
+  firebaseUrl = 'https://isaacg-cms-default-rtdb.firebaseio.com/messages.json';
 
-  constructor() {
-    this.messages = MOCKMESSAGES;
+  constructor(private http: HttpClient) {
+    this.getMessages();
   }
 
   getMessages(): Message[] {
+    this.http.get<Message[]>(this.firebaseUrl).subscribe(
+      (messages: Message[]) => {
+        this.messages = messages ?? [];
+        this.maxMessageId = this.getMaxId();
+        this.messageListChangedEvent.next(this.messages.slice());
+      },
+      (error) => console.error(error)
+    );
     return this.messages.slice();
   }
 
-  getMessage(id: string): Message {
-    for (let message of this.messages) {
-      if (message.id === id) {
-        return message;
+  getMaxId(): number {
+    let maxId = 0;
+    for (const message of this.messages) {
+      const currentId = parseInt(message.id);
+      if (currentId > maxId) {
+        maxId = currentId;
       }
     }
-    return null!;
+    return maxId;
   }
 
   addMessage(message: Message) {
+    if (!message) return;
+    this.maxMessageId++;
+    message.id = this.maxMessageId.toString();
     this.messages.push(message);
-    this.messageChangedEvent.emit(this.messages.slice());
+    this.storeMessages();
+  }
+
+  storeMessages() {
+    const messageJson = JSON.stringify(this.messages);
+    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    this.http.put(this.firebaseUrl, messageJson, { headers }).subscribe(() => {
+      this.messageListChangedEvent.next(this.messages.slice());
+    });
   }
 }
-
