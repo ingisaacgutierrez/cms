@@ -6,6 +6,11 @@ const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 const index = require('./server/routes/app');
 
+const documentRoutes = require('./server/routes/documents');
+const messageRoutes = require('./server/routes/messages');
+const contactRoutes = require('./server/routes/contacts');
+
+
 const app = express();
 
 app.use(bodyParser.json());
@@ -26,6 +31,10 @@ app.use(express.static(path.join(__dirname, 'dist/cms/browser')));
 
 
 app.use('/', index);
+app.use('/documents', documentRoutes);
+app.use('/messages', messageRoutes);
+app.use('/contacts', contactRoutes);
+
 
 
 app.get('/*splat', (req, res) => {
