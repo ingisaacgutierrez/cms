@@ -11,35 +11,26 @@ export class ContactService {
   contactSelectedEvent = new EventEmitter<Contact>();
   contacts: Contact[] = [];
   maxContactId: number = 0;
-  firebaseUrl = 'https://isaacg-cms-default-rtdb.firebaseio.com/contacts.json';
+  private baseUrl = 'http://localhost:3000/contacts';
 
   constructor(private http: HttpClient) {
     this.getContacts();
   }
 
-  getContacts(): Contact[] {
-    this.http.get<Contact[]>(this.firebaseUrl).subscribe(
-      (contacts: Contact[]) => {
-        this.contacts = contacts ?? [];
-        this.maxContactId = this.getMaxId();
-        this.contactListChangedEvent.next(this.contacts.slice());
-      },
-      (error) => console.error(error)
-    );
-    return this.contacts.slice();
+  getContacts(): void {
+    this.http.get<Contact[]>(this.baseUrl)
+      .subscribe(
+        (contacts) => {
+          this.contacts = contacts ?? [];
+          this.maxContactId = this.getMaxId();
+          this.sortAndSend();
+        },
+        (error) => console.error('Error fetching contacts:', error)
+      );
   }
 
-  getContact(id: string): Contact {
-    return this.contacts.find(contact => contact.id === id.toString())!;
-
-  }
-
-  storeContacts() {
-    const contactsJson = JSON.stringify(this.contacts);
-    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-    this.http.put(this.firebaseUrl, contactsJson, { headers }).subscribe(() => {
-      this.contactListChangedEvent.next(this.contacts.slice());
-    });
+  getContact(id: string): Contact | undefined {
+    return this.contacts.find(contact => contact.id === id);
   }
 
   getMaxId(): number {
@@ -53,26 +44,61 @@ export class ContactService {
     return maxId;
   }
 
-  addContact(contact: Contact) {
+  addContact(contact: Contact): void {
     if (!contact) return;
-    this.maxContactId++;
-    contact.id = this.maxContactId.toString();
-    this.contacts.push(contact);
-    this.storeContacts();
+
+    contact.id = '';
+
+    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+
+    this.http.post<Contact>(this.baseUrl, contact, { headers })
+      .subscribe(
+        (newContact) => {
+          this.contacts.push(newContact);
+          this.sortAndSend();
+        }
+      );
   }
 
-  updateContact(original: Contact, updated: Contact) {
-    const index = this.contacts.indexOf(original);
-    if (index < 0) return;
-    updated.id = original.id;
-    this.contacts[index] = updated;
-    this.storeContacts();
-  }
+  updateContact(original: Contact, updated: Contact): void {
+    if (!original || !updated) return;
 
-  deleteContact(contact: Contact) {
-    const pos = this.contacts.indexOf(contact);
+    const pos = this.contacts.findIndex(c => c.id === original.id);
     if (pos < 0) return;
-    this.contacts.splice(pos, 1);
-    this.storeContacts();
+
+    updated.id = original.id;
+
+    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+
+    this.http.put<Contact>(`${this.baseUrl}/${original.id}`, updated, { headers })
+      .subscribe(
+        (updatedContact) => {
+          this.contacts[pos] = updatedContact;
+          this.sortAndSend();
+        }
+      );
+  }
+
+  deleteContact(contact: Contact): void {
+    if (!contact) return;
+
+    const pos = this.contacts.findIndex(c => c.id === contact.id);
+    if (pos < 0) return;
+
+    this.http.delete(`${this.baseUrl}/${contact.id}`)
+      .subscribe(
+        () => {
+          this.contacts.splice(pos, 1);
+          this.sortAndSend();
+        }
+      );
+  }
+
+  private sortAndSend(): void {
+    this.contacts.sort((a, b) =>
+      a.name.toLowerCase() > b.name.toLowerCase() ? 1 : -1
+    );
+    this.contactListChangedEvent.next(this.contacts.slice());
   }
 }
+

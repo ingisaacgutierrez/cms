@@ -10,22 +10,22 @@ export class MessageService {
   messageListChangedEvent = new Subject<Message[]>();
   messages: Message[] = [];
   maxMessageId: number = 0;
-  firebaseUrl = 'https://isaacg-cms-default-rtdb.firebaseio.com/messages.json';
+  private baseUrl = 'http://localhost:3000/messages';
 
   constructor(private http: HttpClient) {
     this.getMessages();
   }
 
-  getMessages(): Message[] {
-    this.http.get<Message[]>(this.firebaseUrl).subscribe(
-      (messages: Message[]) => {
-        this.messages = messages ?? [];
-        this.maxMessageId = this.getMaxId();
-        this.messageListChangedEvent.next(this.messages.slice());
-      },
-      (error) => console.error(error)
-    );
-    return this.messages.slice();
+  getMessages(): void {
+    this.http.get<Message[]>(this.baseUrl)
+      .subscribe(
+        (messages) => {
+          this.messages = messages ?? [];
+          this.maxMessageId = this.getMaxId();
+          this.sortAndSend();
+        },
+        (error) => console.error('Error fetching messages:', error)
+      );
   }
 
   getMaxId(): number {
@@ -39,19 +39,61 @@ export class MessageService {
     return maxId;
   }
 
-  addMessage(message: Message) {
+  addMessage(message: Message): void {
     if (!message) return;
-    this.maxMessageId++;
-    message.id = this.maxMessageId.toString();
-    this.messages.push(message);
-    this.storeMessages();
+
+    message.id = '';
+
+    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+
+    this.http.post<Message>(this.baseUrl, message, { headers })
+      .subscribe(
+        (newMessage) => {
+          this.messages.push(newMessage);
+          this.sortAndSend();
+        }
+      );
   }
 
-  storeMessages() {
-    const messageJson = JSON.stringify(this.messages);
+  updateMessage(original: Message, updated: Message): void {
+    if (!original || !updated) return;
+
+    const pos = this.messages.findIndex(m => m.id === original.id);
+    if (pos < 0) return;
+
+    updated.id = original.id;
+
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-    this.http.put(this.firebaseUrl, messageJson, { headers }).subscribe(() => {
-      this.messageListChangedEvent.next(this.messages.slice());
-    });
+
+    this.http.put<Message>(`${this.baseUrl}/${original.id}`, updated, { headers })
+      .subscribe(
+        (updatedMessage) => {
+          this.messages[pos] = updatedMessage;
+          this.sortAndSend();
+        }
+      );
+  }
+
+  deleteMessage(message: Message): void {
+    if (!message) return;
+
+    const pos = this.messages.findIndex(m => m.id === message.id);
+    if (pos < 0) return;
+
+    this.http.delete(`${this.baseUrl}/${message.id}`)
+      .subscribe(
+        () => {
+          this.messages.splice(pos, 1);
+          this.sortAndSend();
+        }
+      );
+  }
+
+  private sortAndSend(): void {
+    this.messages.sort((a, b) =>
+      a.subject.toLowerCase() > b.subject.toLowerCase() ? 1 : -1
+    );
+    this.messageListChangedEvent.next(this.messages.slice());
   }
 }
+
